@@ -1,0 +1,135 @@
+import { 
+  FileText, 
+  Lock, 
+  Bug, 
+  Cloud, 
+  Camera, 
+  Network, 
+  Database, 
+  Folder,
+  Key,
+  Shield,
+  Terminal,
+  Zap,
+  Cpu,
+  LucideIcon,
+  Search,
+  Globe,
+  Settings,
+  User,
+  Activity,
+  Archive,
+  AlertTriangle,
+  Code,
+  Eye,
+  Flag,
+  HardDrive,
+  Hash,
+  Layers,
+  Link,
+  Mail,
+  MessageSquare,
+  Monitor,
+  Phone,
+  Server,
+  Share2,
+  Smartphone,
+  Wifi
+} from "lucide-react";
+
+export const ICON_MAP: Record<string, LucideIcon> = {
+  FileText,
+  Lock,
+  Bug,
+  Cloud,
+  Camera,
+  Network,
+  Database,
+  Folder,
+  Key,
+  Shield,
+  Terminal,
+  Zap,
+  Cpu,
+  Search,
+  Globe,
+  Settings,
+  User,
+  Activity,
+  Archive,
+  AlertTriangle,
+  Code,
+  Eye,
+  Flag,
+  HardDrive,
+  Hash,
+  Layers,
+  Link,
+  Mail,
+  MessageSquare,
+  Monitor,
+  Phone,
+  Server,
+  Share2,
+  Smartphone,
+  Wifi
+};
+
+export const CATEGORY_METADATA: Record<string, { icon: LucideIcon, description: string }> = {
+  "Sensitive Files": {
+    icon: FileText,
+    description: "Search for exposed credentials, configuration files, and environment leaks."
+  },
+  "Admin Panels": {
+    icon: Lock,
+    description: "Identify administrative login portals and restricted backend interfaces."
+  },
+  "Vulnerability Research": {
+    icon: Bug,
+    description: "Common endpoints for version information, debug pages, and known exploits."
+  },
+  "Cloud Leaks": {
+    icon: Cloud,
+    description: "Publicly accessible S3 buckets, Firebase databases, and cloud storage."
+  },
+  "IoT & Surveillance": {
+    icon: Camera,
+    description: "Discover webcams, smart devices, and industrial control systems."
+  },
+  "Network Infrastructure": {
+    icon: Network,
+    description: "Identify exposed network devices, routers, and infrastructure services."
+  },
+  "Backups": {
+    icon: Database,
+    description: "Search for database dumps, compressed archives, and backup files."
+  },
+  "Index Of": {
+    icon: Folder,
+    description: "Directory listings and exposed file trees on web servers."
+  },
+  "Tokens & Keys": {
+    icon: Key,
+    description: "Find API keys, JWT tokens, and private cryptographic signatures."
+  },
+  "Vulnerable Servers": {
+    icon: Cpu,
+    description: "Servers running outdated or vulnerable software versions."
+  },
+  "Log Files": {
+    icon: Terminal,
+    description: "Search for application logs, access logs, and error reports."
+  },
+  "SQL Injection": {
+    icon: Database,
+    description: "Queries designed to identify potential SQL injection entry points."
+  },
+  "XSS": {
+    icon: Zap,
+    description: "Signatures for identifying cross-site scripting vulnerabilities."
+  },
+  "Cloud Platforms": {
+    icon: Shield,
+    description: "Discover assets across major cloud providers like Azure and GCP."
+  }
+};

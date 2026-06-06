@@ -1,0 +1,111 @@
+@import "tailwindcss";
+
+@theme {
+  /* Liquid Glass - Green & Black Palette */
+  --color-background: #000000;
+  --color-background-secondary: #050505;
+  --color-surface: rgba(10, 10, 10, 0.4);
+  --color-border: rgba(0, 255, 148, 0.1);
+  
+  --color-primary: #00FF94; /* Vibrant Neon Green */
+  --color-primary-foreground: #000000;
+  
+  --color-secondary: #00d4ff; /* Kept for depth, but primary is green */
+  --color-secondary-foreground: #000000;
+  
+  --color-tertiary: #a855f7;
+  
+  --color-warning: #ffb800;
+  --color-error: #ff4560;
+  
+  --color-foreground: #FFFFFF;
+  --color-muted: rgba(255, 255, 255, 0.05);
+  --color-muted-foreground: #888888;
+  --color-dim-foreground: #444444;
+  
+  --color-destructive: #ff4560;
+  --color-destructive-foreground: #ffffff;
+  
+  --color-input: rgba(0, 0, 0, 0.5);
+  --color-ring: #00FF94;
+
+  /* Typography */
+  --font-fira: var(--font-fira-code), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-oxanium: var(--font-oxanium), ui-sans-serif, system-ui, sans-serif;
+  --font-ibm: var(--font-ibm-plex-mono), ui-monospace, monospace;
+  --font-jetbrains: var(--font-jetbrains-mono), ui-monospace, monospace;
+
+  /* Radius - Slightly softer for liquid feel */
+  --radius-lg: 12px;
+  --radius-md: 8px;
+  --radius-sm: 4px;
+
+  /* Animation */
+  --animate-blink: blink 1s step-end infinite;
+  --animate-float: float 6s ease-in-out infinite;
+}
+
+@keyframes blink {
+  from, to { border-color: transparent }
+  50% { border-color: var(--color-primary) }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-ibm);
+    @apply antialiased overflow-x-hidden;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-oxanium);
+    letter-spacing: 0.05em;
+  }
+}
+
+/* Liquid Glass Utilities */
+@utility liquid-glass {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+@utility glass-border {
+  border: 1px solid rgba(0, 255, 148, 0.2);
+  &:hover {
+    border-color: rgba(0, 255, 148, 0.5);
+    box-shadow: 0 0 20px rgba(0, 255, 148, 0.1);
+  }
+}
+
+@utility green-glow {
+  filter: drop-shadow(0 0 8px rgba(0, 255, 148, 0.4));
+}
+
+@utility liquid-gradient {
+  background: linear-gradient(135deg, rgba(0, 255, 148, 0.05) 0%, rgba(0, 0, 0, 0) 100%);
+}
+
+@utility scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Transitions */
+.snappy-transition {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}

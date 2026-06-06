@@ -7,6 +7,7 @@ import {
 } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
+import { Analytics } from "@vercel/analytics/next";
 
 const firaCode = Fira_Code({
   variable: "--font-fira-code",
@@ -47,6 +48,7 @@ export default function RootLayout({
       <body className={`${firaCode.variable} ${oxanium.variable} ${ibmPlexMono.variable} ${jetbrainsMono.variable} antialiased`}>
         {children}
         <Toaster position="bottom-right" theme="dark" closeButton richColors />
+        <Analytics />
       </body>
     </html>
   );

@@ -6,13 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Terminal, ShieldCheck, Loader2, ArrowLeft } from "lucide-react";
+import { Terminal, ShieldCheck, Loader2, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 
-export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState("");
+export default function ResetPasswordPage() {
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   
@@ -25,21 +25,39 @@ export default function ForgotPasswordPage() {
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (password !== confirmPassword) {
+      toast.error("Validation Failed", {
+        description: "Passwords do not match the required protocol.",
+      });
+      return;
+    }
+
+    if (password.length < 6) {
+      toast.error("Insecure Key", {
+        description: "Password must be at least 6 characters long.",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
+      const { error } = await supabase.auth.updateUser({
+        password: password,
       });
 
       if (error) {
-        toast.error("Reset Failed", {
+        toast.error("Update Failed", {
           description: error.message,
         });
       } else {
-        toast.success("Recovery Link Sent", {
-          description: "Check your email for the recovery protocol instructions.",
+        toast.success("Security Updated", {
+          description: "Your access keys have been rotated. Redirecting to login...",
         });
+        setTimeout(() => {
+          router.push("/login");
+        }, 2000);
       }
     } catch (err) {
       console.error(err);
@@ -63,7 +81,7 @@ export default function ForgotPasswordPage() {
       
       <div className="absolute top-8 left-8 flex items-center gap-3 opacity-40">
          <div className="w-2 h-2 bg-primary green-glow animate-pulse" />
-         <span className="text-[10px] font-jetbrains font-bold uppercase tracking-[0.4em] text-primary">Recovery</span>
+         <span className="text-[10px] font-jetbrains font-bold uppercase tracking-[0.4em] text-primary">Security_Reset</span>
       </div>
 
       <Card className="w-full max-w-md liquid-glass border-white/10 relative z-10 rounded-3xl shadow-[0_32px_64px_rgba(0,0,0,0.5)] overflow-hidden">
@@ -74,7 +92,7 @@ export default function ForgotPasswordPage() {
           <div className="flex justify-center">
             <div className="p-4 bg-primary/5 border border-primary/20 rounded-2xl relative green-glow animate-float">
                <div className="absolute -top-1 -right-1 w-1.5 h-1.5 bg-primary" />
-               <Terminal className="w-10 h-10 text-primary" />
+               <KeyRound className="w-10 h-10 text-primary" />
             </div>
           </div>
           <div className="space-y-2">
@@ -82,7 +100,7 @@ export default function ForgotPasswordPage() {
               DORK<span className="text-primary">HUB</span>
             </CardTitle>
             <div className="bg-primary/10 text-primary text-[10px] font-jetbrains font-bold uppercase tracking-[0.3em] py-1 px-4 inline-block border border-primary/20 rounded-full">
-              KEY_RECOVERY
+              NEW_CREDENTIALS
             </div>
           </div>
         </CardHeader>
@@ -91,15 +109,27 @@ export default function ForgotPasswordPage() {
           <CardContent className="space-y-6">
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-[10px] font-oxanium font-bold uppercase tracking-widest text-primary/40 ml-2">Registered Email</Label>
+                <Label htmlFor="password" className="text-[10px] font-oxanium font-bold uppercase tracking-widest text-primary/40 ml-2">New Password</Label>
                 <Input 
-                  id="email" 
-                  type="email" 
-                  placeholder="User@DORKHUB.XYZ" 
+                  id="password" 
+                  type="password" 
+                  placeholder="••••••••" 
                   required 
                   className="bg-black/50 border-white/5 focus:border-primary/40 rounded-xl h-12 font-jetbrains text-xs text-white"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword" className="text-[10px] font-oxanium font-bold uppercase tracking-widest text-primary/40 ml-2">Confirm Password</Label>
+                <Input 
+                  id="confirmPassword" 
+                  type="password" 
+                  placeholder="••••••••" 
+                  required 
+                  className="bg-black/50 border-white/5 focus:border-primary/40 rounded-xl h-12 font-jetbrains text-xs text-white"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                 />
               </div>
             </div>
@@ -113,19 +143,11 @@ export default function ForgotPasswordPage() {
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
                 <span className="flex items-center">
-                  <Terminal className="w-4 h-4 mr-3" />
-                  Request Recovery Link
+                  <ShieldCheck className="w-4 h-4 mr-3" />
+                  Update Access Key
                 </span>
               )}
             </Button>
-            
-            <Link 
-              href="/login"
-              className="text-[10px] font-bold uppercase tracking-widest text-white/30 hover:text-primary transition-all flex items-center justify-center gap-3 group"
-            >
-              <ArrowLeft className="w-3 h-3 group-hover:-translate-x-1 transition-transform" />
-              Back to Login
-            </Link>
           </CardFooter>
         </form>
       </Card>

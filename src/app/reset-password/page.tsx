@@ -15,13 +15,27 @@ export default function ResetPasswordPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [verifying, setVerifying] = useState(true);
   
   const router = useRouter();
   const supabase = createClient();
 
   useEffect(() => {
     setIsMounted(true);
-  }, []);
+    
+    async function checkSession() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Unauthorized Access", {
+          description: "No active recovery session found. Please request a new link.",
+        });
+        router.push("/forgot-password");
+      }
+      setVerifying(false);
+    }
+    
+    checkSession();
+  }, [router, supabase]);
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();

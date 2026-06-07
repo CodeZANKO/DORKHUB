@@ -9,9 +9,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Terminal, ShieldCheck, Loader2, UserPlus, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function LoginPage() {
-  const [mode, setMode] = useState<"login" | "signup" | "reset">("login");
+  const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
@@ -73,22 +74,6 @@ export default function LoginPage() {
             description: "Please check your email to verify your credentials.",
           });
         }
-      } else {
-        // Reset Mode
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}/auth/callback?next=/settings`,
-        });
-
-        if (error) {
-          toast.error("Reset Failed", {
-            description: error.message,
-          });
-        } else {
-          toast.success("Recovery Link Sent", {
-            description: "Check your email for the recovery protocol instructions.",
-          });
-          setMode("login");
-        }
       }
     } catch (err) {
       console.error(err);
@@ -144,11 +129,7 @@ export default function LoginPage() {
               DORK<span className="text-primary">HUB</span>
             </CardTitle>
             <div className="bg-primary/10 text-primary text-[10px] font-jetbrains font-bold uppercase tracking-[0.3em] py-1 px-4 inline-block border border-primary/20 rounded-full">
-              {
-                mode === "login" ? "Login" : 
-                mode === "signup" ? "Sign Up" : 
-                "KEY_RECOVERY"
-              }
+              {mode === "login" ? "Login" : "Sign Up"}
             </div>
           </div>
         </CardHeader>
@@ -197,30 +178,27 @@ export default function LoginPage() {
                 />
               </div>
               
-              {mode !== "reset" && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between px-2">
-                    <Label htmlFor="password" className="text-[10px] font-oxanium font-bold uppercase tracking-widest text-primary/40">Password</Label>
-                    {mode === "login" && (
-                      <button 
-                        type="button"
-                        onClick={() => setMode("reset")}
-                        className="text-[9px] font-bold uppercase tracking-widest text-white/30 hover:text-primary transition-colors underline underline-offset-8"
-                      >
-                        Forget Password?
-                      </button>
-                    )}
-                  </div>
-                  <Input 
-                    id="password" 
-                    type="password" 
-                    required 
-                    className="bg-black/50 border-white/5 focus:border-primary/40 rounded-xl h-12 font-jetbrains text-xs text-white"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
+              <div className="space-y-2">
+                <div className="flex items-center justify-between px-2">
+                  <Label htmlFor="password" className="text-[10px] font-oxanium font-bold uppercase tracking-widest text-primary/40">Password</Label>
+                  {mode === "login" && (
+                    <Link 
+                      href="/forgot-password"
+                      className="text-[9px] font-bold uppercase tracking-widest text-white/30 hover:text-primary transition-colors underline underline-offset-8"
+                    >
+                      Forget Password?
+                    </Link>
+                  )}
                 </div>
-              )}
+                <Input 
+                  id="password" 
+                  type="password" 
+                  required 
+                  className="bg-black/50 border-white/5 focus:border-primary/40 rounded-xl h-12 font-jetbrains text-xs text-white"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
             </div>
           </CardContent>
           
@@ -232,8 +210,8 @@ export default function LoginPage() {
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
                 <span className="flex items-center">
-                  {mode === "login" ? <ShieldCheck className="w-4 h-4 mr-3" /> : mode === "signup" ? <UserPlus className="w-4 h-4 mr-3" /> : <Terminal className="w-4 h-4 mr-3" />}
-                  {mode === "login" ? "Login" : mode === "signup" ? "Sign UP" : "Sign UP"}
+                  {mode === "login" ? <ShieldCheck className="w-4 h-4 mr-3" /> : <UserPlus className="w-4 h-4 mr-3" />}
+                  {mode === "login" ? "Login" : "Sign UP"}
                 </span>
               )}
             </Button>

@@ -13,6 +13,8 @@ import { useEffect, useState } from "react";
 export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<{ username: string; email: string } | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [updatingPassword, setUpdatingPassword] = useState(false);
   const supabase = createClient();
 
   useEffect(() => {
@@ -39,6 +41,32 @@ export default function SettingsPage() {
     toast.success("Settings updated successfully", {
       description: "Node configuration has been synchronized.",
     });
+  };
+
+  const handleChangePassword = async () => {
+    if (!newPassword) {
+      toast.error("Input required", {
+        description: "Please enter a new password protocol.",
+      });
+      return;
+    }
+
+    setUpdatingPassword(true);
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+
+    if (error) {
+      toast.error("Protocol Failed", {
+        description: error.message,
+      });
+    } else {
+      toast.success("Security Updated", {
+        description: "Your access keys have been rotated successfully.",
+      });
+      setNewPassword("");
+    }
+    setUpdatingPassword(false);
   };
 
   return (
@@ -103,6 +131,34 @@ export default function SettingsPage() {
                     <SelectItem value="shodan">Shodan</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+          </section>
+
+          <section className="space-y-6">
+            <h2 className="text-2xl font-black uppercase italic flex items-center gap-2 tracking-tighter">
+              <Shield className="text-primary w-5 h-5" />
+              Credential Rotation
+            </h2>
+            <div className="space-y-4 bg-card/30 p-6 rounded-xl border border-white/5 backdrop-blur-sm">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold uppercase text-primary tracking-widest">New Password</Label>
+                <div className="flex gap-4">
+                  <Input 
+                    type="password" 
+                    placeholder="Enter new security protocol" 
+                    className="bg-black/40 border-white/5"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                  />
+                  <Button 
+                    onClick={handleChangePassword}
+                    disabled={updatingPassword}
+                    className="bg-primary/20 hover:bg-primary/30 text-primary border border-primary/20 min-w-[120px]"
+                  >
+                    {updatingPassword ? <Loader2 className="w-4 h-4 animate-spin" /> : "Update Key"}
+                  </Button>
+                </div>
               </div>
             </div>
           </section>

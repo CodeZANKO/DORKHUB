@@ -30,8 +30,12 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-    icons: {
-    icon: '/favicon.ico?v=2',
+  icons: {
+    icon: [
+      { url: '/favicon.ico?v=3', sizes: 'any' },
+      { url: '/favicon.svg?v=3', type: 'image/svg+xml' }
+    ],
+    apple: '/icon.png?v=3',
   },
   title: "DorkHub | The OSINT & Google Dork Platform",
   description: "A centralized, community-driven platform for indexing, searching, and sharing Google Dorks and OSINT search queries.",

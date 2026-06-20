@@ -7,7 +7,29 @@ import { Toaster } from "@/components/ui/sonner";
 import { MOCK_DORKS } from "@/lib/mock-data";
 import { Library, ShieldCheck } from "lucide-react";
 
+import { useState, useEffect } from "react";
+import { createClient } from "@/utils/supabase/client";
+
+interface Platform {
+  id: string;
+  name: string;
+  slug: string;
+  icon: string;
+  base_url: string;
+}
+
 export default function CollectionsPage() {
+  const [platforms, setPlatforms] = useState<Platform[]>([]);
+  const supabase = createClient();
+
+  useEffect(() => {
+    async function fetchPlatforms() {
+      const { data } = await supabase.from('platforms').select('*').eq('is_active', true);
+      if (data) setPlatforms(data as Platform[]);
+    }
+    fetchPlatforms();
+  }, [supabase]);
+
   // Mocking favorited dorks
   const favoriteDorks = MOCK_DORKS.slice(0, 2);
 
@@ -44,7 +66,7 @@ export default function CollectionsPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-24">
             {favoriteDorks.map((dork) => (
-              <DorkCard key={dork.id} dork={dork} targetDomain="" />
+              <DorkCard key={dork.id} dork={dork} targetDomain="" platforms={platforms} />
             ))}
             
             <div className="border border-dashed border-border rounded-md flex flex-col items-center justify-center h-[300px] bg-surface/40 hover:bg-surface hover:border-secondary/40 snappy-transition cursor-pointer group shadow-lg">

@@ -42,7 +42,7 @@ interface Platform {
 interface UserDork {
   id: string;
   query: string;
-  description: string;
+  description: string | null;
   status: 'pending' | 'approved' | 'rejected';
   created_at: string;
   platform: string;
@@ -120,12 +120,32 @@ export default function SubmitPage() {
 
     setLoading(true);
     
+    const { data: duplicateDorks, error: duplicateError } = await supabase
+      .from('dorks')
+      .select('id')
+      .eq('query', query.trim())
+      .limit(1);
+
+    if (duplicateError) {
+      toast.error(`Validation failed: ${duplicateError.message}`);
+      setLoading(false);
+      return;
+    }
+
+    if (duplicateDorks && duplicateDorks.length > 0) {
+      toast.error("Duplicate Signature", {
+        description: "This dork has already been submitted to the database.",
+      });
+      setLoading(false);
+      return;
+    }
+
     const { error } = await supabase
       .from('dorks')
       .insert([
         {
-          query,
-          description,
+          query: query.trim(),
+          description: description || null,
           platform,
           category_id: categoryId,
           author_id: user.id,
@@ -218,13 +238,13 @@ export default function SubmitPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="category" className="text-xs font-bold uppercase text-primary">Category</Label>
-                    <Select value={categoryId} onValueChange={(val) => val && setCategoryId(val)}>
+                    <Select value={categoryId || ""} onValueChange={(val) => val && setCategoryId(val)}>
                       <SelectTrigger className="bg-black/40 border-white/5 focus:border-primary/50">
                         <SelectValue placeholder="Select Category">
                           {categories.find(c => c.id === categoryId)?.name}
                         </SelectValue>
                       </SelectTrigger>
-                      <SelectContent className="bg-card border-white/10">
+                      <SelectContent className="bg-zinc-900 border border-white/10">
                         {categories.map((cat) => (
                           <SelectItem key={cat.id} value={cat.id}>
                             {cat.name}
@@ -235,7 +255,7 @@ export default function SubmitPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="platform" className="text-xs font-bold uppercase text-primary">Target Platform</Label>
-                    <Select value={platform} onValueChange={(val) => val && setPlatform(val)}>
+                    <Select value={platform || "google"} onValueChange={(val) => val && setPlatform(val)}>
                       <SelectTrigger
                         className="
                           bg-black/40
@@ -251,7 +271,7 @@ export default function SubmitPage() {
                           {platforms.find(p => p.slug === platform)?.name || platform}
                         </SelectValue>
                       </SelectTrigger>
-                      <SelectContent className="bg-card border-white/10">
+                      <SelectContent className="bg-zinc-900 border border-white/10">
                         {platforms.map((p) => (
                           <SelectItem key={p.id} value={p.slug}>
                             {p.name}
@@ -267,7 +287,6 @@ export default function SubmitPage() {
                   <Textarea
                     id="description"
                     placeholder="What does this dork find? Be specific."
-                    required
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     className="

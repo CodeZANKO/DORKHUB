@@ -1,5 +1,6 @@
 "use client";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -39,40 +40,56 @@ interface Category {
   slug: string;
   description: string | null;
   icon: string | null;
+  platform: string;
+}
+
+interface Platform {
+  id: string;
+  name: string;
+  slug: string;
 }
 
 export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
+  const [platforms, setPlatforms] = useState<Platform[]>([]);
   const [loading, setLoading] = useState(true);
   const [newCategory, setNewCategory] = useState<{
     name: string;
     slug: string;
     description: string | null;
     icon: string | null;
-  }>({ name: '', slug: '', description: '', icon: 'Terminal' });
+    platform: string;
+  }>({ name: '', slug: '', description: '', icon: 'Terminal', platform: 'all' });
   const [isAdding, setIsAdding] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   
   const supabase = createClient();
 
-  const fetchCategories = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('categories')
-      .select('*')
-      .order('name', { ascending: true });
+  const fetchInitialData = useCallback(async () => {
+    setLoading(true);
+    const [catRes, platRes] = await Promise.all([
+      supabase.from('categories').select('*').order('name', { ascending: true }),
+      supabase.from('platforms').select('*').eq('is_active', true)
+    ]);
 
-    if (error) {
+    if (catRes.error) {
       toast.error("Failed to fetch categories");
     } else {
-      setCategories(data || []);
+      setCategories(catRes.data || []);
+    }
+
+    if (platRes.error) {
+      toast.error("Failed to fetch platforms");
+    } else {
+      setPlatforms(platRes.data || []);
     }
     setLoading(false);
   }, [supabase]);
 
   useEffect(() => {
-    fetchCategories();
-  }, [fetchCategories]);
+    fetchInitialData();
+  }, [fetchInitialData]);
 
   const handleAddCategory = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,8 +103,8 @@ export default function AdminCategoriesPage() {
       toast.error(`Error: ${error.message}`);
     } else {
       toast.success("Category added successfully");
-      setNewCategory({ name: '', slug: '', description: '', icon: 'Terminal' });
-      await fetchCategories();
+      setNewCategory({ name: '', slug: '', description: '', icon: 'Terminal', platform: 'all' });
+      await fetchInitialData();
     }
     setIsAdding(false);
   };
@@ -103,7 +120,8 @@ export default function AdminCategoriesPage() {
         name: editingCategory.name,
         slug: editingCategory.slug,
         description: editingCategory.description,
-        icon: editingCategory.icon
+        icon: editingCategory.icon,
+        platform: editingCategory.platform
       })
       .eq('id', editingCategory.id);
 
@@ -112,7 +130,7 @@ export default function AdminCategoriesPage() {
     } else {
       toast.success("Category updated successfully");
       setEditingCategory(null);
-      await fetchCategories();
+      await fetchInitialData();
     }
     setIsUpdating(false);
   };
@@ -129,7 +147,7 @@ export default function AdminCategoriesPage() {
       toast.error(`Error: ${error.message}`);
     } else {
       toast.success("Category deleted");
-      await fetchCategories();
+      await fetchInitialData();
     }
   };
 
@@ -195,7 +213,7 @@ export default function AdminCategoriesPage() {
                   <SelectTrigger className="bg-black/40 border-white/5">
                     <SelectValue placeholder="Select icon" />
                   </SelectTrigger>
-                  <SelectContent className="bg-zinc-900 border-white/10 max-h-60">
+                  <SelectContent className="bg-zinc-900 border border-white/10 max-h-60">
                     {Object.keys(ICON_MAP).sort().map(iconName => {
                       const Icon = ICON_MAP[iconName];
                       return (
@@ -207,6 +225,23 @@ export default function AdminCategoriesPage() {
                         </SelectItem>
                       );
                     })}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Platform Association</Label>
+                <Select 
+                  value={newCategory.platform || 'all'} 
+                  onValueChange={val => setNewCategory(prev => ({...prev, platform: val || 'all'}))}
+                >
+                  <SelectTrigger className="bg-black/40 border-white/5">
+                    <SelectValue placeholder="Select platform" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-zinc-900 border border-white/10">
+                    <SelectItem value="all" className="hover:bg-white/5 focus:bg-white/5">All Platforms</SelectItem>
+                    {platforms.map(p => (
+                      <SelectItem key={p.slug} value={p.slug} className="hover:bg-white/5 focus:bg-white/5 uppercase">{p.name}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -227,7 +262,7 @@ export default function AdminCategoriesPage() {
               <TableHeader className="bg-white/5">
                 <TableRow className="border-white/5 hover:bg-transparent">
                   <TableHead className="text-[10px] font-black uppercase tracking-widest py-4">Classification</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase tracking-widest">Slug</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest">Platform</TableHead>
                   <TableHead className="text-[10px] font-black uppercase tracking-widest text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -254,8 +289,10 @@ export default function AdminCategoriesPage() {
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell className="font-mono text-xs text-muted-foreground">
-                          /{cat.slug}
+                        <TableCell>
+                          <Badge variant="outline" className="text-[9px] uppercase font-black tracking-widest border-purple-500/30 text-purple-400 bg-purple-500/5">
+                            {cat.platform}
+                          </Badge>
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
@@ -335,7 +372,7 @@ export default function AdminCategoriesPage() {
                   <SelectTrigger className="bg-black/40 border-white/5 text-white">
                     <SelectValue placeholder="Select icon" />
                   </SelectTrigger>
-                  <SelectContent className="bg-zinc-900 border-white/10 max-h-60">
+                  <SelectContent className="bg-zinc-900 border border-white/10 max-h-60">
                     {Object.keys(ICON_MAP).sort().map(iconName => {
                       const Icon = ICON_MAP[iconName];
                       return (
@@ -347,6 +384,23 @@ export default function AdminCategoriesPage() {
                         </SelectItem>
                       );
                     })}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Platform Association</Label>
+                <Select 
+                  value={editingCategory.platform || 'all'} 
+                  onValueChange={val => setEditingCategory(prev => prev ? {...prev, platform: val || 'all'} : null)}
+                >
+                  <SelectTrigger className="bg-black/40 border-white/5 text-white">
+                    <SelectValue placeholder="Select platform" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-zinc-900 border border-white/10">
+                    <SelectItem value="all" className="text-white hover:bg-white/5 focus:bg-white/5">All Platforms</SelectItem>
+                    {platforms.map(p => (
+                      <SelectItem key={p.slug} value={p.slug} className="text-white hover:bg-white/5 focus:bg-white/5 uppercase">{p.name}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

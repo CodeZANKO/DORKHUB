@@ -35,8 +35,8 @@ import { Dork } from "@/lib/mock-data";
 
 // ─── Hero morph constants ────────────────────────────────────────────────────
 const MORPH_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#@$%&*!?';
-const MORPH_SEQ_1 = ['DORK', 'RECON', 'QUERY',"Kurd"];
-const MORPH_SEQ_2 = ['HUB', 'NET', 'LAB','iStan'];
+const MORPH_SEQ_1 = ['DORK', 'RECON', 'QUERY',"Kurd","Cyber","Dork"];
+const MORPH_SEQ_2 = ['HUB', 'NET', 'LAB','iStan','Security','Ing'];
 
 function getRand() {
   return MORPH_CHARS[Math.floor(Math.random() * MORPH_CHARS.length)];
@@ -116,6 +116,8 @@ interface Platform {
   name: string;
   slug: string;
   is_active: boolean;
+  base_url: string;
+  icon: string;
 }
 
 interface User {
@@ -132,7 +134,7 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [platforms, setPlatforms] = useState<Platform[]>([]);
-  const [dbCategories, setCategories] = useState<{name: string, description: string, icon: string}[]>([]);
+  const [dbCategories, setCategories] = useState<{name: string, description: string, icon: string, platform: string}[]>([]);
   
   const [view, setView] = useState<'categories' | 'dorks'>('categories');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -155,12 +157,6 @@ export default function Home() {
     // populate char spans for morphing (replaces the plain-text defaults set in JSX)
     if (w1Ref.current) setWordEl(w1Ref.current, 'DORK', 'white');
     if (w2Ref.current) setWordEl(w2Ref.current, 'HUB', 'green');
-
-    setTimeout(() => {
-      if (s1Ref.current) countUp(s1Ref.current, 4200, '+', 1600);
-      if (s2Ref.current) countUp(s2Ref.current, 6, '', 1000);
-      if (s3Ref.current) countUp(s3Ref.current, 318, '+', 1400);
-    }, 400);
 
     function cycle() {
       const n1 = (seq1.current + 1) % MORPH_SEQ_1.length;
@@ -186,6 +182,17 @@ export default function Home() {
     return () => { if (morphTimer.current) clearTimeout(morphTimer.current); };
   }, []);
 
+  // Stats countUp effect
+  useEffect(() => {
+    if (!loading) {
+      setTimeout(() => {
+        if (s1Ref.current) countUp(s1Ref.current, dorks.length, '+', 1600);
+        if (s2Ref.current) countUp(s2Ref.current, platforms.length, '', 1000);
+        if (s3Ref.current) countUp(s3Ref.current, dbCategories.length, '', 1400);
+      }, 400);
+    }
+  }, [loading, dorks.length, platforms.length, dbCategories.length]);
+
   useEffect(() => {
     async function getSession() {
       const { data: { user } } = await supabase.auth.getUser();
@@ -200,7 +207,7 @@ export default function Home() {
             .select('*, profiles(username), categories(name)')
             .eq('status', 'approved'),
           supabase.from('platforms').select('*').eq('is_active', true),
-          supabase.from('categories').select('name, description, icon')
+          supabase.from('categories').select('name, description, icon, platform')
         ]);
 
         if (dorksRes.error) {
@@ -215,9 +222,10 @@ export default function Home() {
             const d = item as {
               id: string,
               query: string,
-              description: string,
+              description: string | null,
               platform: string,
               success_rate: number | null,
+              created_at: string,
               profiles: { username: string | null } | null,
               categories: { name: string | null } | null
             };
@@ -228,7 +236,8 @@ export default function Home() {
               category: (d.categories?.name as Dork["category"]) || "Sensitive Files",
               platform: (d.platform as Dork["platform"]) || "google",
               successRate: d.success_rate || 0,
-              author: d.profiles?.username || "Unknown"
+              author: d.profiles?.username || "Unknown",
+              created_at: d.created_at
             };
           });
           setDorks(mappedDorks);
@@ -248,15 +257,17 @@ export default function Home() {
 
   const categoryCounts = useMemo(() => {
     return dorks.reduce((acc: Record<string, number>, dork) => {
-      acc[dork.category] = (acc[dork.category] || 0) + 1;
+      if (activeTab === "all" || dork.platform === activeTab) {
+        acc[dork.category] = (acc[dork.category] || 0) + 1;
+      }
       return acc;
     }, {});
-  }, [dorks]);
+  }, [dorks, activeTab]);
 
   const filteredDorks = dorks.filter((dork) => {
     const matchesSearch =
       dork.query.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      dork.description.toLowerCase().includes(searchQuery.toLowerCase());
+      (dork.description || "").toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = !selectedCategory || dork.category === selectedCategory;
     const matchesTab = activeTab === "all" || dork.platform === activeTab;
     return matchesSearch && matchesCategory && matchesTab;
@@ -360,7 +371,7 @@ export default function Home() {
           text-transform: uppercase;
         }
         .dh-tag:hover {
-          background: rgba(0,255,120,0.1);
+          background: rgba(0,255,120,1);
           border-color: rgba(0,255,120,0.6);
         }
       `}</style>
@@ -410,8 +421,7 @@ export default function Home() {
 
         {/* ── HERO ────────────────────────────────────────────────────────── */}
         <section
-          className="px-6 md:px-12 relative overflow-hidden"
-          style={{ minHeight: '420px', paddingTop: '5rem', paddingBottom: '5rem' }}
+          className="mx-6 md:mx-10 my-8 px-8 md:px-16 pt-12 pb-110 md:pt-20 md:pb-110 relative overflow-hidden rounded-xl border border-primary/15 bg-white/[0.01] liquid-glass shadow-2xl"
         >
           <div className="dh-scanline" />
           <div className="dh-grid" />
@@ -456,23 +466,25 @@ export default function Home() {
 
             {/* Stats */}
             <div
-              className="flex gap-8 pt-6"
+              className="flex flex-wrap gap-6 pt-8 mt-6"
               style={{ borderTop: '0.5px solid rgba(0,255,120,0.12)' }}
             >
               {[
-                // { ref: s1Ref, label: 'Dorks' },
-                // { ref: s2Ref, label: 'Engines' },
-                // { ref: s3Ref, label: 'Contributors' },
+                { ref: s1Ref, label: 'Dorks' },
+                { ref: s2Ref, label: 'Platforms' },
+                { ref: s3Ref, label: 'Categories' },
               ].map(({ ref, label }) => (
-                <div key={label} className="flex flex-col gap-0.5">
+                <div 
+                  key={label} 
+                  className="flex flex-col gap-2 px-5 py-3 bg-white/[0.02] border border-white/[0.04] rounded-2xl min-w-[130px] snappy-transition hover:bg-primary/[0.02] hover:border-primary/20 hover:scale-[1.02] shadow-sm"
+                >
                   <span
                     ref={ref}
-                    className="font-oxanium font-bold text-primary"
-                    style={{ fontSize: 20 }}
+                    className="font-oxanium font-bold text-primary text-2xl md:text-3xl tracking-tight leading-none"
                   >
                     0
                   </span>
-                  <span className="text-[10px] font-jetbrains uppercase tracking-widest text-muted-foreground">
+                  <span className="text-[10px] font-jetbrains uppercase tracking-widest text-muted-foreground/60 mt-0.5">
                     {label}
                   </span>
                 </div>
@@ -480,6 +492,9 @@ export default function Home() {
             </div>
           </div>
         </section>
+        <div className="absolute inset-0 pointer-events-none z-0">
+          <div className="w-full h-full bg-[radial-gradient(circle_at_50%_-20%,rgba(0,255,148,0.1),transparent_50%)]" />
+        </div>
         {/* ── END HERO ─────────────────────────────────────────────────────── */}
 
         {/* Repository Section */}
@@ -522,6 +537,23 @@ export default function Home() {
             </div>
           </div>
 
+          <div className="liquid-glass p-4 rounded-2xl border border-white/5 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-2xl">
+            <Tabs defaultValue="all" className="w-full sm:w-auto" onValueChange={setActiveTab}>
+              <TabsList className="bg-black/50 border border-white/5 h-11 rounded-full p-1">
+                <TabsTrigger value="all" className="data-[state=active]:bg-primary data-[state=active]:text-black font-bold text-[10px] h-9 px-6 rounded-full transition-all">ALL</TabsTrigger>
+                {platforms.map((p) => (
+                  <TabsTrigger 
+                    key={p.slug} 
+                    value={p.slug} 
+                    className="data-[state=active]:bg-primary data-[state=active]:text-black font-bold text-[10px] h-9 px-6 rounded-full uppercase transition-all"
+                  >
+                    {p.name}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+          </div>
+
           {loading ? (
             <div className="h-96 flex flex-col items-center justify-center space-y-6">
               <div className="relative">
@@ -532,19 +564,25 @@ export default function Home() {
             </div>
           ) : view === 'categories' ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-24">
-              {dbCategories.map((cat) => {
-                const IconComponent = (cat.icon && ICON_MAP[cat.icon]) || CATEGORY_METADATA[cat.name]?.icon || Terminal;
-                return (
-                  <CategoryCard 
-                    key={cat.name}
-                    name={cat.name}
-                    description={cat.description || (CATEGORY_METADATA[cat.name]?.description || "Search signatures for this category.")}
-                    icon={IconComponent}
-                    count={categoryCounts[cat.name] || 0}
-                    onClick={() => handleCategoryClick(cat.name)}
-                  />
-                );
-              })}
+              {dbCategories
+                .filter(cat => activeTab === 'all' || cat.platform === 'all' || cat.platform === activeTab)
+                .map((cat) => {
+                  const count = categoryCounts[cat.name] || 0;
+                  // Only show categories that have dorks for the selected platform, 
+                  // unless "all" is selected or we want to show everything with 0.
+                  // Given the user request, showing all with updated counts is safer.
+                  const IconComponent = (cat.icon && ICON_MAP[cat.icon]) || CATEGORY_METADATA[cat.name]?.icon || Terminal;
+                  return (
+                    <CategoryCard 
+                      key={cat.name}
+                      name={cat.name}
+                      description={cat.description || (CATEGORY_METADATA[cat.name]?.description || "Search signatures for this category.")}
+                      icon={IconComponent}
+                      count={count}
+                      onClick={() => handleCategoryClick(cat.name)}
+                    />
+                  );
+                })}
               <div 
                 className="liquid-glass border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center h-full min-h-[220px] hover:border-primary/40 snappy-transition cursor-pointer group shadow-2xl"
                 onClick={() => setView('dorks')}
@@ -557,27 +595,10 @@ export default function Home() {
             </div>
           ) : (
             <div className="space-y-10">
-              <div className="liquid-glass p-4 rounded-2xl border border-white/5 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-2xl">
-                <Tabs defaultValue="all" className="w-full sm:w-auto" onValueChange={setActiveTab}>
-                  <TabsList className="bg-black/50 border border-white/5 h-11 rounded-full p-1">
-                    <TabsTrigger value="all" className="data-[state=active]:bg-primary data-[state=active]:text-black font-bold text-[10px] h-9 px-6 rounded-full transition-all">ALL</TabsTrigger>
-                    {platforms.map((p) => (
-                      <TabsTrigger 
-                        key={p.slug} 
-                        value={p.slug} 
-                        className="data-[state=active]:bg-primary data-[state=active]:text-black font-bold text-[10px] h-9 px-6 rounded-full uppercase transition-all"
-                      >
-                        {p.name}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
-                </Tabs>
-              </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-32">
                 {filteredDorks.length > 0 ? (
                   filteredDorks.map((dork) => (
-                    <DorkCard key={dork.id} dork={dork} targetDomain={targetDomain} />
+                    <DorkCard key={dork.id} dork={dork} targetDomain={targetDomain} platforms={platforms} />
                   ))
                 ) : (
                   <div className="col-span-full h-96 liquid-glass flex flex-col items-center justify-center border border-dashed border-white/10 rounded-3xl shadow-2xl">

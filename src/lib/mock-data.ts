@@ -1,11 +1,12 @@
 export interface Dork {
   id: string;
   query: string;
-  description: string;
+  description: string | null;
   category: "Sensitive Files" | "Vulnerable Servers" | "Log Files" | "Admin Panels" | "Tokens & Keys" | "SQL Injection" | "XSS" | "Backups" | "Index Of" | "Cloud Platforms" | "IoT & Surveillance" | "Network Infrastructure" | "Vulnerability Research" | "Cloud Leaks";
   platform: "google" | "bing" | "shodan" | "censys";
   successRate: number;
   author: string;
+  created_at?: string;
 }
 
 export const MOCK_DORKS: Dork[] = [

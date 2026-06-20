@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -85,12 +85,28 @@ export function SubmitDork() {
     setLoading(true);
 
     try {
+      const { data: duplicateDorks, error: duplicateError } = await supabase
+        .from('dorks')
+        .select('id')
+        .eq('query', query.trim())
+        .limit(1);
+
+      if (duplicateError) throw duplicateError;
+
+      if (duplicateDorks && duplicateDorks.length > 0) {
+        toast.error("Duplicate Signature", {
+          description: "This dork has already been submitted to the database.",
+        });
+        setLoading(false);
+        return;
+      }
+
       const { error } = await supabase
         .from('dorks')
         .insert([
           {
-            query,
-            description,
+            query: query.trim(),
+            description: description || null,
             platform,
             category_id: category || null,
             author_id: user.id,
@@ -171,13 +187,13 @@ export function SubmitDork() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="category" className="text-[10px] font-oxanium font-bold uppercase tracking-widest text-primary/60 ml-1">Data_Type</Label>   
-              <Select value={category} onValueChange={(val: string | null) => val && setCategory(val)}>
+              <Select value={category || ""} onValueChange={(val: string | null) => val && setCategory(val)}>
                 <SelectTrigger className="bg-black/40 border-white/5 focus:border-primary/40 rounded-xl h-12 text-xs font-jetbrains text-white">
                   <SelectValue placeholder="Select Category">
                     {categories.find(c => c.id === category)?.name}
                   </SelectValue>
                 </SelectTrigger>
-                <SelectContent className="bg-black/90 border-white/10 backdrop-blur-xl rounded-xl">
+                <SelectContent className="bg-black/90 border border-white/10 backdrop-blur-xl rounded-xl">
                   {categories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id} className="text-xs font-jetbrains text-white hover:bg-primary/10">{cat.name}</SelectItem>
                   ))}
@@ -186,13 +202,13 @@ export function SubmitDork() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="platform" className="text-[10px] font-oxanium font-bold uppercase tracking-widest text-primary/60 ml-1">Relay_Node</Label>
-              <Select value={platform} onValueChange={(val: string | null) => val && setPlatform(val)}>
+              <Select value={platform || "google"} onValueChange={(val: string | null) => val && setPlatform(val)}>
                 <SelectTrigger className="bg-black/40 border-white/5 focus:border-primary/40 rounded-xl h-12 text-xs font-jetbrains text-white">
                   <SelectValue placeholder="Select Platform">
                     {platforms.find(p => p.slug === platform)?.name}
                   </SelectValue>
                 </SelectTrigger>
-                <SelectContent className="bg-black/90 border-white/10 backdrop-blur-xl rounded-xl">
+                <SelectContent className="bg-black/90 border border-white/10 backdrop-blur-xl rounded-xl">
                   {platforms.map((p) => (
                     <SelectItem key={p.slug} value={p.slug} className="text-xs font-jetbrains text-white hover:bg-primary/10">{p.name}</SelectItem>
                   ))}
@@ -206,7 +222,6 @@ export function SubmitDork() {
             <Textarea
               id="description"
               placeholder="Detailed functionality report..."
-              required
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="bg-black/40 border-white/5 focus:border-primary/40 min-h-[100px] font-ibm text-xs rounded-xl p-4 text-white"

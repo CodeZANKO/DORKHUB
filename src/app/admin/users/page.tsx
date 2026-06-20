@@ -11,23 +11,45 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { createClient } from "@/utils/supabase/client";
-import { Users, Shield, ShieldAlert } from "lucide-react";
+import { Users, Shield, ShieldAlert, Copy, Eye } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
+import { WorldMap } from "@/components/admin/WorldMap";
 
 interface Profile {
   id: string;
   username: string;
   role: 'admin' | 'user';
   reputation: number;
+  country_code: string | null;
+  email: string | null;
   created_at: string;
+}
+
+interface UserStats {
+  totalDorks: number;
+  approvedDorks: number;
+  pendingDorks: number;
+  rejectedDorks: number;
+  totalVotes: number;
+  totalFavorites: number;
 }
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<string | null>(null);
+  const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
+  const [selectedUserStats, setSelectedUserStats] = useState<UserStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
   const supabase = createClient();
 
   const fetchUsers = useCallback(async () => {
@@ -73,6 +95,60 @@ export default function AdminUsersPage() {
     };
   }, [supabase]);
 
+  useEffect(() => {
+    if (!selectedUser) {
+      setSelectedUserStats(null);
+      return;
+    }
+
+    const fetchUserStats = async () => {
+      setStatsLoading(true);
+      try {
+        const { data: dorks, error: dorksError } = await supabase
+          .from('dorks')
+          .select('status')
+          .eq('author_id', selectedUser.id);
+
+        if (dorksError) throw dorksError;
+
+        const totalDorks = dorks?.length || 0;
+        const approvedDorks = dorks?.filter(d => d.status === 'approved').length || 0;
+        const pendingDorks = dorks?.filter(d => d.status === 'pending').length || 0;
+        const rejectedDorks = dorks?.filter(d => d.status === 'rejected').length || 0;
+
+        const { count: totalVotes, error: votesError } = await supabase
+          .from('votes')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', selectedUser.id);
+
+        if (votesError) throw votesError;
+
+        const { count: totalFavorites, error: favoritesError } = await supabase
+          .from('favorites')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', selectedUser.id);
+
+        if (favoritesError) throw favoritesError;
+
+        setSelectedUserStats({
+          totalDorks,
+          approvedDorks,
+          pendingDorks,
+          rejectedDorks,
+          totalVotes: totalVotes || 0,
+          totalFavorites: totalFavorites || 0
+        });
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to load operator intelligence statistics");
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+
+    fetchUserStats();
+  }, [selectedUser, supabase]);
+
   const toggleRole = async (userId: string, currentRole: string) => {
     if (userId === currentUser) {
       toast.error("System Override Prevented", {
@@ -109,6 +185,8 @@ export default function AdminUsersPage() {
           </p>
         </div>
       </header>
+
+      <WorldMap users={users} />
 
       <Card className="bg-card/40 border-white/5 backdrop-blur-xl">
         <CardContent className="p-0">
@@ -156,7 +234,16 @@ export default function AdminUsersPage() {
                     <TableCell className="text-xs text-muted-foreground font-mono">
                       {new Date(user.created_at).toLocaleDateString()}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right space-x-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="text-[10px] font-black uppercase tracking-widest h-8 border-white/10 hover:border-primary/50 hover:bg-primary/5 text-muted-foreground hover:text-primary"
+                        onClick={() => setSelectedUser(user)}
+                      >
+                        <Eye className="w-3 h-3 mr-2" />
+                        Inspect
+                      </Button>
                       <Button 
                         variant="outline" 
                         size="sm"
@@ -184,6 +271,117 @@ export default function AdminUsersPage() {
           </Table>
         </CardContent>
       </Card>
+
+      <Dialog open={!!selectedUser} onOpenChange={(open) => { if (!open) setSelectedUser(null); }}>
+        <DialogContent className="max-w-md bg-black/95 border border-white/10 rounded-2xl p-6 shadow-[0_0_50px_rgba(0,255,148,0.05)] text-white font-mono">
+          <DialogHeader>
+            <div className="flex items-center gap-2 text-primary green-glow mb-2">
+              <Shield className="w-4 h-4" />
+              <span className="text-[9px] font-oxanium font-bold uppercase tracking-[0.3em]">Operator_Intel_Inspector</span>
+            </div>
+            <DialogTitle className="text-2xl font-oxanium font-bold uppercase tracking-tighter text-white flex items-center justify-between">
+              <span>{selectedUser?.username}</span>
+              {selectedUser && (
+                <Badge className={
+                  selectedUser.role === 'admin' ? 'bg-red-500/10 text-red-500 border-red-500/20' : 'bg-blue-500/10 text-blue-500 border-blue-500/20'
+                }>
+                  {selectedUser.role.toUpperCase()}
+                </Badge>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedUser && (
+            <div className="space-y-6 mt-4">
+              <div className="space-y-3 p-4 rounded-xl bg-white/5 border border-white/5 font-ibm">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-muted-foreground uppercase tracking-wider">Operator ID</span>
+                  <div className="flex items-center gap-2 font-mono">
+                    <span className="text-white text-[10px] select-all">{selectedUser.id}</span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="w-5 h-5 text-muted-foreground hover:text-white"
+                      onClick={() => {
+                        navigator.clipboard.writeText(selectedUser.id);
+                        toast.success("ID copied to clipboard");
+                      }}
+                    >
+                      <Copy className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-muted-foreground uppercase tracking-wider">Reputation Level</span>
+                  <span className="text-primary font-bold">{selectedUser.reputation} REP</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-muted-foreground uppercase tracking-wider">Registry Date</span>
+                  <span className="text-white font-mono">{new Date(selectedUser.created_at).toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-muted-foreground uppercase tracking-wider">Deployment Node</span>
+                  <span className="text-white font-mono uppercase font-bold tracking-wider">{selectedUser.country_code || "Unknown"}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-muted-foreground uppercase tracking-wider">Email Address</span>
+                  <span className="text-white font-mono select-all">{selectedUser.email || "No Email Registered"}</span>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h3 className="text-[10px] font-oxanium font-bold uppercase tracking-widest text-primary/60">System_Activity_Telemetry</h3>
+                
+                {statsLoading ? (
+                  <div className="h-32 flex flex-col items-center justify-center border border-white/5 rounded-xl bg-white/2 gap-2 text-xs uppercase tracking-widest text-muted-foreground animate-pulse">
+                    <span>Retrieving Telemetry...</span>
+                  </div>
+                ) : selectedUserStats ? (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 rounded-xl border border-white/5 bg-white/2 flex flex-col gap-1">
+                      <span className="text-[9px] uppercase text-muted-foreground">Total Dorks</span>
+                      <span className="text-xl font-bold font-oxanium">{selectedUserStats.totalDorks}</span>
+                    </div>
+                    <div className="p-3 rounded-xl border border-white/5 bg-white/2 flex flex-col gap-1">
+                      <span className="text-[9px] uppercase text-muted-foreground">Approved Dorks</span>
+                      <span className="text-xl font-bold font-oxanium text-primary">{selectedUserStats.approvedDorks}</span>
+                    </div>
+                    <div className="p-3 rounded-xl border border-white/5 bg-white/2 flex flex-col gap-1">
+                      <span className="text-[9px] uppercase text-muted-foreground">Pending Review</span>
+                      <span className="text-xl font-bold font-oxanium text-warning">{selectedUserStats.pendingDorks}</span>
+                    </div>
+                    <div className="p-3 rounded-xl border border-white/5 bg-white/2 flex flex-col gap-1">
+                      <span className="text-[9px] uppercase text-muted-foreground">Rejected Dorks</span>
+                      <span className="text-xl font-bold font-oxanium text-error">{selectedUserStats.rejectedDorks}</span>
+                    </div>
+                    <div className="p-3 rounded-xl border border-white/5 bg-white/2 flex flex-col gap-1">
+                      <span className="text-[9px] uppercase text-muted-foreground">Votes Cast</span>
+                      <span className="text-xl font-bold font-oxanium text-secondary">{selectedUserStats.totalVotes}</span>
+                    </div>
+                    <div className="p-3 rounded-xl border border-white/5 bg-white/2 flex flex-col gap-1">
+                      <span className="text-[9px] uppercase text-muted-foreground">Favorites Added</span>
+                      <span className="text-xl font-bold font-oxanium text-white/90">{selectedUserStats.totalFavorites}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3 rounded-xl border border-white/5 bg-white/2 text-center text-xs uppercase text-error">
+                    Error fetching statistics.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="mt-6">
+            <Button 
+              onClick={() => setSelectedUser(null)} 
+              className="w-full bg-primary text-black font-bold uppercase tracking-widest hover:bg-primary/80 rounded-xl h-10 text-xs"
+            >
+              Close Inspector
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

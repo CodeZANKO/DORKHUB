@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     avatar_url TEXT,
     reputation INTEGER DEFAULT 0,
     role TEXT DEFAULT 'user' CHECK (role IN ('user', 'admin')),
+    country_code TEXT,
+    email TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
@@ -66,10 +68,11 @@ CREATE TABLE IF NOT EXISTS public.favorites (
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-    INSERT INTO public.profiles (id, username)
+    INSERT INTO public.profiles (id, username, email)
     VALUES (
         new.id, 
-        COALESCE(new.raw_user_meta_data->>'username', split_part(new.email, '@', 1))
+        COALESCE(new.raw_user_meta_data->>'username', split_part(new.email, '@', 1)),
+        new.email
     );
     RETURN new;
 END;

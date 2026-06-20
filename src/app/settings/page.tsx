@@ -109,7 +109,7 @@ export default function SettingsPage() {
             </div>
           </section>
 
-          <section className="space-y-6">
+          {/* <section className="space-y-6">
             <h2 className="text-2xl font-black uppercase italic flex items-center gap-2 tracking-tighter">
               <Shield className="text-secondary w-5 h-5" />
               Security & Privacy
@@ -125,7 +125,7 @@ export default function SettingsPage() {
                   <SelectTrigger className="bg-black/40 border-white/5">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-card border-white/10">
+                  <SelectContent className="bg-zinc-900 border border-white/10">
                     <SelectItem value="google">Google</SelectItem>
                     <SelectItem value="bing">Bing</SelectItem>
                     <SelectItem value="shodan">Shodan</SelectItem>
@@ -133,12 +133,12 @@ export default function SettingsPage() {
                 </Select>
               </div>
             </div>
-          </section>
+          </section> */}
 
           <section className="space-y-6">
             <h2 className="text-2xl font-black uppercase italic flex items-center gap-2 tracking-tighter">
               <Shield className="text-primary w-5 h-5" />
-              Credential Rotation
+             Change Password
             </h2>
             <div className="space-y-4 bg-card/30 p-6 rounded-xl border border-white/5 backdrop-blur-sm">
               <div className="space-y-2">
@@ -146,7 +146,7 @@ export default function SettingsPage() {
                 <div className="flex gap-4">
                   <Input 
                     type="password" 
-                    placeholder="Enter new security protocol" 
+                    placeholder="Enter new password" 
                     className="bg-black/40 border-white/5"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
@@ -156,7 +156,7 @@ export default function SettingsPage() {
                     disabled={updatingPassword}
                     className="bg-primary/20 hover:bg-primary/30 text-primary border border-primary/20 min-w-[120px]"
                   >
-                    {updatingPassword ? <Loader2 className="w-4 h-4 animate-spin" /> : "Update Key"}
+                    {updatingPassword ? <Loader2 className="w-4 h-4 animate-spin" /> : "Update Password"}
                   </Button>
                 </div>
               </div>
@@ -168,7 +168,7 @@ export default function SettingsPage() {
             className="w-full bg-primary text-black font-black uppercase italic tracking-tighter h-12"
           >
             <Zap className="w-4 h-4 mr-2 fill-current" />
-            Synchronize Configuration
+            Save Settings
           </Button>
         </div>
       </main>

@@ -29,6 +29,17 @@
   --color-input: rgba(0, 0, 0, 0.5);
   --color-ring: #00FF94;
 
+  /* Google Dork Card Design Variables */
+  --color-background-primary: var(--color-background);
+  --color-border-tertiary: rgba(255, 255, 255, 0.08);
+  --color-background-info: rgba(0, 212, 255, 0.12);
+  --color-text-info: #00d4ff;
+  --color-background-danger: rgba(255, 69, 96, 0.12);
+  --color-text-danger: #ff4560;
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #a3a3a3;
+  --color-text-tertiary: rgba(255, 255, 255, 0.4);
+
   /* Typography */
   --font-fira: var(--font-fira-code), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   --font-oxanium: var(--font-oxanium), ui-sans-serif, system-ui, sans-serif;
@@ -39,6 +50,8 @@
   --radius-lg: 12px;
   --radius-md: 8px;
   --radius-sm: 4px;
+  --border-radius-lg: var(--radius-lg);
+  --border-radius-md: var(--radius-md);
 
   /* Animation */
   --animate-blink: blink 1s step-end infinite;

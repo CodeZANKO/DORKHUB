@@ -16,7 +16,8 @@ import {
   LogOut,
   User as UserIcon,
   ChevronLeft,
-  Menu
+  Menu,
+  Home
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -25,9 +26,9 @@ import { createClient } from "@/utils/supabase/client";
 import { Button } from "@/components/ui/button";
 
 const navItems = [
-  { name: "Explore", icon: Compass, href: "/", public: true },
+  { name: "Home", icon: Home, href: "/", public: true },
   // { name: "My Collections", icon: Library, href: "/collections", public: false },
-  { name: "Submission Lab", icon: PlusCircle, href: "/submit", public: false },
+  { name: "Submit Dork", icon: PlusCircle, href: "/submit", public: false },
   // { name: "History", icon: History, href: "/history", public: false },
 ];
 
@@ -50,6 +51,7 @@ interface Profile {
   id: string;
   role: 'admin' | 'user';
   username: string;
+  country_code?: string;
 }
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
@@ -72,7 +74,27 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           .select('*')
           .eq('id', authUser.id)
           .single();
-        setProfile(profileData as Profile | null);
+        const typedProfile = profileData as Profile | null;
+        setProfile(typedProfile);
+
+        if (typedProfile && !typedProfile.country_code) {
+          try {
+            const geoRes = await fetch("https://ipapi.co/json/");
+            if (geoRes.ok) {
+              const geoData = await geoRes.json();
+              if (geoData.country_code) {
+                const cCode = geoData.country_code.toLowerCase();
+                await supabase
+                  .from('profiles')
+                  .update({ country_code: cCode })
+                  .eq('id', authUser.id);
+                setProfile({ ...typedProfile, country_code: cCode });
+              }
+            }
+          } catch (e) {
+            console.error("GeoIP lookup failed:", e);
+          }
+        }
       }
       setLoading(false);
     }
@@ -143,7 +165,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           <div className="space-y-2">
             {!isCollapsed && (
               <div className="px-4 py-1">
-                <span className="text-[10px] font-oxanium font-bold uppercase tracking-[0.3em] text-primary/40">Main_Matrix</span>
+                <span className="text-[10px] font-oxanium font-bold uppercase tracking-[0.3em] text-primary/40">Main</span>
               </div>
             )}
             <div className="space-y-1">
@@ -179,10 +201,42 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             </div>
           </div>
 
+          {isAdmin && (
+            <div className="space-y-2">
+              {!isCollapsed && (
+                <div className="px-4 py-1">
+                  <span className="text-[10px] font-oxanium font-bold uppercase tracking-[0.3em] text-error/40">Admin</span>
+                </div>
+              )}
+              <div className="space-y-1">
+                <Link
+                  href="/admin"
+                  onClick={onClose}
+                  className={cn(
+                    "flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-300 group relative",
+                    isCollapsed && "px-0 justify-center",
+                    pathname.startsWith("/admin")
+                      ? "bg-error/10 text-error border border-error/20 shadow-[0_0_20px_rgba(255,69,96,0.15)]"
+                      : "text-muted-foreground hover:text-error hover:bg-white/5"
+                  )}
+                  title="Admin"
+                >
+                  <div className="flex items-center gap-3">
+                    <LayoutDashboard className={cn(
+                      "w-4 h-4 transition-all duration-300 shrink-0",
+                      pathname.startsWith("/admin") ? "text-error" : "group-hover:text-error"
+                    )} />
+                    {!isCollapsed && <span className="text-sm font-bold tracking-wide">Admin Dashboard</span>}
+                  </div>
+                </Link>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
             {!isCollapsed && (
               <div className="px-4 py-1">
-                <span className="text-[10px] font-oxanium font-bold uppercase tracking-[0.3em] text-white/20">Protocol_Docs</span>
+                <span className="text-[10px] font-oxanium font-bold uppercase tracking-[0.3em] text-white/20">Docs & Settings</span>
               </div>
             )}
             <div className="space-y-1">
@@ -253,7 +307,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                   onClick={handleLogout}
                 >
                   <LogOut className="w-3.5 h-3.5 mr-2" />
-                  Term_Session
+                  logout
                 </Button>
               )}
             </div>

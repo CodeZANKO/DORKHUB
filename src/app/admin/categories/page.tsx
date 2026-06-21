@@ -14,7 +14,7 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { createClient } from "@/utils/supabase/client";
-import { Layers, Plus, Trash2, Tag, Terminal, Edit2 } from "lucide-react";
+import { Layers, Plus, Trash2, Tag, Terminal, Edit2, FileUp } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { ICON_MAP } from "@/lib/category-metadata";

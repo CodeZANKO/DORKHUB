@@ -76,7 +76,7 @@ export default function SubmitPage() {
     if (error) {
       console.error("Error fetching user dorks:", error);
     } else if (data) {
-      setUserDorks(data as any[]);
+      setUserDorks(data as unknown as UserDork[]);
     }
     setFetchingDorks(false);
   }, [supabase]);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Shield, Globe } from "lucide-react";
+import { Globe } from "lucide-react";
 
 interface UserProfile {
   id: string;
@@ -12,8 +12,14 @@ interface UserProfile {
   created_at: string;
 }
 
+interface VisitorStat {
+  country_code: string;
+  visitor_count: number;
+}
+
 interface WorldMapProps {
   users: UserProfile[];
+  visitorStats?: VisitorStat[];
 }
 
 interface MapPath {
@@ -22,11 +28,17 @@ interface MapPath {
   name: string;
 }
 
-export function WorldMap({ users }: WorldMapProps) {
+export function WorldMap({ users, visitorStats }: WorldMapProps) {
   const [mapPaths, setMapPaths] = useState<MapPath[]>([]);
   const [viewBox, setViewBox] = useState("0 0 1008 651");
   const [loading, setLoading] = useState(true);
-  const [hovered, setHovered] = useState<{ name: string; count: number; x: number; y: number } | null>(null);
+  const [hovered, setHovered] = useState<{ 
+    name: string; 
+    operatorsCount: number; 
+    visitorsCount: number; 
+    x: number; 
+    y: number; 
+  } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Compute operator count per country code (lowercase)
@@ -40,6 +52,20 @@ export function WorldMap({ users }: WorldMapProps) {
     });
     return stats;
   }, [users]);
+
+  // Compute visitor count per country code (lowercase)
+  const visitorCountryStats = useMemo(() => {
+    const stats: Record<string, number> = {};
+    if (visitorStats) {
+      visitorStats.forEach((v) => {
+        if (v.country_code) {
+          const code = v.country_code.trim().toLowerCase();
+          stats[code] = (stats[code] || 0) + Number(v.visitor_count);
+        }
+      });
+    }
+    return stats;
+  }, [visitorStats]);
 
   // Load and parse simplified SVG world map
   useEffect(() => {
@@ -79,31 +105,43 @@ export function WorldMap({ users }: WorldMapProps) {
     loadMap();
   }, []);
 
-  const handleMouseMove = (e: React.MouseEvent, name: string, count: number) => {
+  const handleMouseMove = (e: React.MouseEvent, name: string, operatorsCount: number, visitorsCount: number) => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    setHovered({ name, count, x, y });
+    setHovered({ name, operatorsCount, visitorsCount, x, y });
   };
 
   const handleMouseLeave = () => {
     setHovered(null);
   };
 
-  // Find country with most operators for telemetry display
+  // Find country with most operators and visitors for telemetry display
   const topCountry = useMemo(() => {
-    let top = { name: "N/A", count: 0 };
+    let topOps = { name: "N/A", count: 0 };
+    let topVis = { name: "N/A", count: 0 };
+
     Object.entries(countryStats).forEach(([code, count]) => {
-      if (count > top.count) {
+      if (count > topOps.count) {
         const path = mapPaths.find(p => p.id.toLowerCase() === code);
         if (path) {
-          top = { name: path.name, count };
+          topOps = { name: path.name, count };
         }
       }
     });
-    return top;
-  }, [countryStats, mapPaths]);
+
+    Object.entries(visitorCountryStats).forEach(([code, count]) => {
+      if (count > topVis.count) {
+        const path = mapPaths.find(p => p.id.toLowerCase() === code);
+        if (path) {
+          topVis = { name: path.name, count };
+        }
+      }
+    });
+
+    return { topOps, topVis };
+  }, [countryStats, visitorCountryStats, mapPaths]);
 
   return (
     <div className="liquid-glass border-white/5 rounded-3xl p-6 relative overflow-hidden group shadow-2xl transition-all hover:border-primary/20">
@@ -118,8 +156,9 @@ export function WorldMap({ users }: WorldMapProps) {
           <h2 className="text-xl font-oxanium font-bold uppercase tracking-widest text-white">Live_Deployment_Map</h2>
         </div>
         {!loading && (
-          <div className="text-right font-mono text-[9px] text-muted-foreground uppercase tracking-widest hidden sm:block">
-            Top Node: <span className="text-primary font-bold">{topCountry.name}</span> ({topCountry.count} ops)
+          <div className="text-right font-mono text-[9px] text-muted-foreground uppercase tracking-widest hidden sm:flex flex-col gap-0.5">
+            <div>Top Operator Node: <span className="text-blue-400 font-bold">{topCountry.topOps.name}</span> ({topCountry.topOps.count} ops)</div>
+            <div>Top Visitor Node: <span className="text-emerald-400 font-bold">{topCountry.topVis.name}</span> ({topCountry.topVis.count} visits)</div>
           </div>
         )}
       </header>
@@ -139,18 +178,20 @@ export function WorldMap({ users }: WorldMapProps) {
             >
               {mapPaths.map((path) => {
                 const code = path.id.toLowerCase();
-                const count = countryStats[code] || 0;
+                const operatorsCount = countryStats[code] || 0;
+                const visitorsCount = visitorCountryStats[code] || 0;
                 const isHovered = hovered?.name === path.name;
-                const hasOperators = count > 0;
+                const totalActivity = operatorsCount + visitorsCount;
+                const hasActivity = totalActivity > 0;
 
                 // Cyberpunk styled fills & strokes
                 let fill = "rgba(255, 255, 255, 0.03)";
                 let stroke = "rgba(255, 255, 255, 0.08)";
                 let strokeWidth = "0.6";
 
-                if (hasOperators) {
-                  // Dark green transparent for active countries, brighter for more users
-                  const opacity = Math.min(0.15 + (count * 0.08), 0.5);
+                if (hasActivity) {
+                  // Dark green transparent for active countries, brighter for more activity
+                  const opacity = Math.min(0.15 + (totalActivity * 0.03), 0.6);
                   fill = `rgba(0, 255, 148, ${opacity})`;
                   stroke = "rgba(0, 255, 148, 0.4)";
                   strokeWidth = "0.8";
@@ -170,7 +211,7 @@ export function WorldMap({ users }: WorldMapProps) {
                     stroke={stroke}
                     strokeWidth={strokeWidth}
                     className="transition-all duration-150 cursor-pointer"
-                    onMouseMove={(e) => handleMouseMove(e, path.name, count)}
+                    onMouseMove={(e) => handleMouseMove(e, path.name, operatorsCount, visitorsCount)}
                     onMouseLeave={handleMouseLeave}
                   />
                 );
@@ -180,17 +221,24 @@ export function WorldMap({ users }: WorldMapProps) {
             {/* Custom Tooltip */}
             {hovered && (
               <div 
-                className="absolute pointer-events-none bg-black/95 border border-primary/30 px-3 py-2 rounded-xl text-xs font-mono shadow-[0_0_15px_rgba(0,255,148,0.2)] z-50 transition-all duration-75 flex flex-col gap-0.5"
+                className="absolute pointer-events-none bg-black/95 border border-primary/30 px-3 py-2 rounded-xl text-xs font-mono shadow-[0_0_15px_rgba(0,255,148,0.2)] z-50 transition-all duration-75 flex flex-col gap-1 min-w-[120px]"
                 style={{ 
                   left: `${hovered.x + 12}px`, 
                   top: `${hovered.y + 12}px`,
                   transform: 'translate(0, 0)'
                 }}
               >
-                <span className="text-white font-bold tracking-tight">{hovered.name}</span>
-                <span className="text-primary text-[10px] uppercase font-bold tracking-widest">
-                  {hovered.count} {hovered.count === 1 ? 'Operator' : 'Operators'}
-                </span>
+                <span className="text-white font-bold tracking-tight border-b border-white/10 pb-1 mb-0.5">{hovered.name}</span>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-blue-400 text-[9px] uppercase font-bold tracking-wider flex justify-between gap-4">
+                    <span>Operators:</span>
+                    <span className="text-white font-bold">{hovered.operatorsCount}</span>
+                  </span>
+                  <span className="text-emerald-400 text-[9px] uppercase font-bold tracking-wider flex justify-between gap-4">
+                    <span>Visitors:</span>
+                    <span className="text-white font-bold">{hovered.visitorsCount}</span>
+                  </span>
+                </div>
               </div>
             )}
           </>

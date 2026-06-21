@@ -59,8 +59,9 @@ export function DorkCard({ dork, targetDomain }: DorkCardProps) {
   };
 
   const handleExplain = () => {
-    if (typeof window !== "undefined" && (window as any).sendPrompt) {
-      (window as any).sendPrompt(`Explain why this dork works and how to fix the exposure:\n\n${injectedQuery}`);
+    const customWindow = typeof window !== "undefined" ? (window as unknown as { sendPrompt?: (prompt: string) => void }) : null;
+    if (customWindow && customWindow.sendPrompt) {
+      customWindow.sendPrompt(`Explain why this dork works and how to fix the exposure:\n\n${injectedQuery}`);
     } else {
       const explainQuery = `${injectedQuery}`;
       window.open(`https://www.google.com/search?q=${encodeURIComponent(explainQuery)}`, "_blank");

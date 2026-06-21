@@ -43,8 +43,14 @@ interface UserStats {
   totalFavorites: number;
 }
 
+interface VisitorCountryStat {
+  country_code: string;
+  visitor_count: number;
+}
+
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<Profile[]>([]);
+  const [visitorStats, setVisitorStats] = useState<VisitorCountryStat[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
@@ -56,15 +62,19 @@ export default function AdminUsersPage() {
     const { data: { user: authUser } } = await supabase.auth.getUser();
     setCurrentUser(authUser?.id || null);
 
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const [profilesRes, visitorRes] = await Promise.all([
+      supabase.from('profiles').select('*').order('created_at', { ascending: false }),
+      supabase.rpc('get_visitor_stats_by_country')
+    ]);
 
-    if (error) {
+    if (profilesRes.error) {
       toast.error("Failed to fetch users");
     } else {
-      setUsers((data as unknown as Profile[]) || []);
+      setUsers((profilesRes.data as unknown as Profile[]) || []);
+    }
+
+    if (!visitorRes.error && visitorRes.data) {
+      setVisitorStats(visitorRes.data as VisitorCountryStat[]);
     }
     setLoading(false);
   }, [supabase]);
@@ -73,17 +83,25 @@ export default function AdminUsersPage() {
     let ignore = false;
     
     const initialFetch = async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (ignore) return;
+      setCurrentUser(authUser?.id || null);
+
+      const [profilesRes, visitorRes] = await Promise.all([
+        supabase.from('profiles').select('*').order('created_at', { ascending: false }),
+        supabase.rpc('get_visitor_stats_by_country')
+      ]);
 
       if (ignore) return;
       
-      if (error) {
+      if (profilesRes.error) {
         toast.error("Failed to fetch users");
       } else {
-        setUsers((data as unknown as Profile[]) || []);
+        setUsers((profilesRes.data as unknown as Profile[]) || []);
+      }
+
+      if (!visitorRes.error && visitorRes.data) {
+        setVisitorStats(visitorRes.data as VisitorCountryStat[]);
       }
       setLoading(false);
     };
@@ -96,9 +114,14 @@ export default function AdminUsersPage() {
   }, [supabase]);
 
   useEffect(() => {
+    let timer: NodeJS.Timeout;
     if (!selectedUser) {
-      setSelectedUserStats(null);
-      return;
+      timer = setTimeout(() => {
+        setSelectedUserStats(null);
+      }, 0);
+      return () => {
+        if (timer) clearTimeout(timer);
+      };
     }
 
     const fetchUserStats = async () => {
@@ -186,7 +209,7 @@ export default function AdminUsersPage() {
         </div>
       </header>
 
-      <WorldMap users={users} />
+      <WorldMap users={users} visitorStats={visitorStats} />
 
       <Card className="bg-card/40 border-white/5 backdrop-blur-xl">
         <CardContent className="p-0">

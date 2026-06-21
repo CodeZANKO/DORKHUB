@@ -24,7 +24,10 @@ export default function LoginPage() {
   const supabase = createClient();
 
   useEffect(() => {
-    setIsMounted(true);
+    const timer = setTimeout(() => {
+      setIsMounted(true);
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleAuth = async (e: React.FormEvent) => {

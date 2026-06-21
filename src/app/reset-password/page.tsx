@@ -21,7 +21,9 @@ export default function ResetPasswordPage() {
   const supabase = createClient();
 
   useEffect(() => {
-    setIsMounted(true);
+    const timer = setTimeout(() => {
+      setIsMounted(true);
+    }, 0);
     
     async function checkSession() {
       const { data: { session } } = await supabase.auth.getSession();
@@ -35,6 +37,7 @@ export default function ResetPasswordPage() {
     }
     
     checkSession();
+    return () => clearTimeout(timer);
   }, [router, supabase]);
 
   const handleReset = async (e: React.FormEvent) => {

@@ -7,7 +7,9 @@ import {
   AlertTriangle,
   ArrowRight,
   Layers,
-  Globe
+  Globe,
+  Eye,
+  Fingerprint
 } from "lucide-react";
 import NextLink from "next/link";
 import { Button } from "@/components/ui/button";
@@ -23,11 +25,23 @@ export default async function AdminDashboard() {
   const { count: voteCount } = await supabase.from('votes').select('*', { count: 'exact', head: true });
   const { count: favoriteCount } = await supabase.from('favorites').select('*', { count: 'exact', head: true });
 
+  // Fetch page views and unique visitors stats
+  const { count: pageViewsCount, error: pageViewsError } = await supabase
+    .from('page_views')
+    .select('*', { count: 'exact', head: true });
+  const { data: uniqueVisitorsCount, error: uniqueVisitorsError } = await supabase
+    .rpc('get_unique_visitors_count');
+
+  if (pageViewsError) console.error("Error fetching page views:", pageViewsError);
+  if (uniqueVisitorsError) console.error("Error fetching unique visitors:", uniqueVisitorsError);
+
   const stats = [
     { label: "Total Operators", value: userCount || 0, icon: Users, color: "text-blue-500" },
     { label: "Pending Approvals", value: pendingDorks || 0, icon: AlertTriangle, color: "text-yellow-500" },
     { label: "Active Signatures", value: totalDorks || 0, icon: Database, color: "text-primary" },
     { label: "Community Engagement", value: (voteCount || 0) + (favoriteCount || 0), icon: ShieldCheck, color: "text-secondary" },
+    { label: "Unique Visitors", value: uniqueVisitorsCount || 0, icon: Fingerprint, color: "text-emerald-500" },
+    { label: "Total Page Views", value: pageViewsCount || 0, icon: Eye, color: "text-pink-500" },
   ];
 
   return (
@@ -45,7 +59,7 @@ export default async function AdminDashboard() {
         </p>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {stats.map((stat) => (
           <Card key={stat.label} className="liquid-glass border-white/5 rounded-2xl shadow-xl transition-all hover:border-primary/20">
             <CardHeader className="pb-4">

@@ -88,7 +88,10 @@ export default function AdminCategoriesPage() {
   }, [supabase]);
 
   useEffect(() => {
-    fetchInitialData();
+    const timer = setTimeout(() => {
+      fetchInitialData();
+    }, 0);
+    return () => clearTimeout(timer);
   }, [fetchInitialData]);
 
   const handleAddCategory = async (e: React.FormEvent) => {

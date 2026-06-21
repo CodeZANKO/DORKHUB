@@ -33,8 +33,9 @@ export default function AnalyticsTracker() {
             if (geoRes.ok) {
               const geoData = await geoRes.json();
               if (geoData.country_code) {
-                countryCode = geoData.country_code.toLowerCase();
-                sessionStorage.setItem("dorkhub_visitor_country", countryCode);
+                const cCode = geoData.country_code.toLowerCase();
+                countryCode = cCode;
+                sessionStorage.setItem("dorkhub_visitor_country", cCode);
               }
             }
           } catch (e) {

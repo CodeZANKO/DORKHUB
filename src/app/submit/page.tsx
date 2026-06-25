@@ -31,6 +31,7 @@ interface User {
 interface Category {
   id: string;
   name: string;
+  platform: string;
 }
 
 interface Platform {
@@ -91,13 +92,12 @@ export default function SubmitPage() {
       }
 
       const [categoriesRes, platformsRes] = await Promise.all([
-        supabase.from('categories').select('id, name').order('name'),
+        supabase.from('categories').select('id, name, platform').order('name'),
         supabase.from('platforms').select('id, name, slug').eq('is_active', true).order('name')
       ]);
 
       if (categoriesRes.data) {
-        setCategories(categoriesRes.data);
-        if (categoriesRes.data.length > 0) setCategoryId(categoriesRes.data[0].id);
+        setCategories(categoriesRes.data as Category[]);
       }
       if (platformsRes.data) {
         setPlatforms(platformsRes.data);
@@ -105,6 +105,20 @@ export default function SubmitPage() {
     }
     getData();
   }, [supabase, fetchUserDorks]);
+
+  // Filter categories by selected platform, and ensure categoryId is synced
+  useEffect(() => {
+    const filtered = categories.filter(
+      (cat) => cat.platform === "all" || cat.platform === platform
+    );
+    if (filtered.length > 0) {
+      if (!filtered.some((c) => c.id === categoryId)) {
+        setCategoryId(filtered[0].id);
+      }
+    } else {
+      setCategoryId("");
+    }
+  }, [platform, categories, categoryId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -245,11 +259,13 @@ export default function SubmitPage() {
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent className="bg-zinc-900 border border-white/10">
-                        {categories.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id}>
-                            {cat.name}
-                          </SelectItem>
-                        ))}
+                        {categories
+                          .filter((cat) => cat.platform === "all" || cat.platform === platform)
+                          .map((cat) => (
+                            <SelectItem key={cat.id} value={cat.id}>
+                              {cat.name}
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                   </div>

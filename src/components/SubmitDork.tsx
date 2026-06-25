@@ -35,6 +35,7 @@ interface Platform {
 interface Category {
   id: string;
   name: string;
+  platform: string;
 }
 
 interface User {
@@ -72,6 +73,20 @@ export function SubmitDork() {
     }
     getInitialData();
   }, [supabase]);
+
+  // Filter categories by selected platform, and ensure category selection is synced
+  useEffect(() => {
+    const filtered = categories.filter(
+      (cat) => cat.platform === "all" || cat.platform === platform
+    );
+    if (filtered.length > 0) {
+      if (!filtered.some((c) => c.id === category)) {
+        setCategory(filtered[0].id);
+      }
+    } else {
+      setCategory("");
+    }
+  }, [platform, categories, category]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -194,9 +209,11 @@ export function SubmitDork() {
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent className="bg-black/90 border border-white/10 backdrop-blur-xl rounded-xl">
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id} className="text-xs font-jetbrains text-white hover:bg-primary/10">{cat.name}</SelectItem>
-                  ))}
+                  {categories
+                    .filter((cat) => cat.platform === "all" || cat.platform === platform)
+                    .map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id} className="text-xs font-jetbrains text-white hover:bg-primary/10">{cat.name}</SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>

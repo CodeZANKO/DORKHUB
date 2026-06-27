@@ -114,6 +114,8 @@ import {
   Footprints,
 } from "lucide-react";
 
+import { Icon } from 'lucide-react';
+
 export const ICON_MAP: Record<string, LucideIcon> = {
   FileText,
   Lock,
